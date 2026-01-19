@@ -12,7 +12,6 @@ import {
   MousePointer2,
   ShieldAlert,
   ExternalLink,
-  UserCheck,
   CreditCard
 } from 'lucide-react';
 import { Shop, ModalMode, TabType } from '../types';
@@ -27,32 +26,39 @@ const ServiceStatusGroupMonitor: React.FC<Props> = ({ shops, onUpdateShop, onClo
   const [activeTab, setActiveTab] = useState<TabType>(TabType.SERVICE_DISABLED);
   const [loadingShopId, setLoadingShopId] = useState<string | null>(null);
   const [successShopIds, setSuccessShopIds] = useState<Set<string>>(new Set());
+  const [sessionEnabledIds, setSessionEnabledIds] = useState<Set<string>>(new Set());
 
-  // 筛选逻辑：需开启服务列表 (仅显示未开启的)
-  const disabledServices = useMemo(() => shops.filter(s => !s.serviceEnabled), [shops]);
+  // 筛选逻辑：需开启服务列表 (显示未开启的，或者在本轮操作中刚开启的)
+  const disabledServices = useMemo(() => {
+    return shops.filter(s => !s.serviceEnabled || sessionEnabledIds.has(s.id));
+  }, [shops, sessionEnabledIds]);
   
-  // 筛选逻辑：连接异常列表 (显示断连的，或者本轮操作中刚恢复连接的)
+  // 筛选逻辑：连接异常列表 (显示断连的，或者在本轮操作中刚恢复连接的)
   const disconnectedPanels = useMemo(() => {
     return shops.filter(s => s.serviceEnabled && (s.status === 'disconnected' || successShopIds.has(s.id)));
   }, [shops, successShopIds]);
 
   // 初始化 Tab 逻辑
   useEffect(() => {
-    if (disabledServices.length > 0) {
+    if (disabledServices.filter(s => !s.serviceEnabled).length > 0) {
       setActiveTab(TabType.SERVICE_DISABLED);
-    } else if (disconnectedPanels.length > 0) {
+    } else if (disconnectedPanels.filter(s => s.status === 'disconnected').length > 0) {
       setActiveTab(TabType.PANEL_DISCONNECTED);
     }
   }, []);
 
   const handleEnableService = async (shop: Shop) => {
+    if (shop.serviceEnabled || loadingShopId === shop.id) return;
+
     setLoadingShopId(shop.id);
     await new Promise(r => setTimeout(r, 1200));
+    
+    // 更新父组件状态
     onUpdateShop(shop.id, { serviceEnabled: true });
+    
+    // 记录本轮开启的ID，保持在列表中常显
+    setSessionEnabledIds(prev => new Set(prev).add(shop.id));
     setLoadingShopId(null);
-    if (disabledServices.length === 1) {
-      setActiveTab(TabType.PANEL_DISCONNECTED);
-    }
   };
 
   const handleVerifyInline = async (shop: Shop) => {
@@ -83,9 +89,9 @@ const ServiceStatusGroupMonitor: React.FC<Props> = ({ shops, onUpdateShop, onClo
           }`}
         >
           需开启服务
-          {disabledServices.length > 0 && (
+          {disabledServices.filter(s => !s.serviceEnabled).length > 0 && (
             <span className="bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded-full text-[10px]">
-              {disabledServices.length}
+              {disabledServices.filter(s => !s.serviceEnabled).length}
             </span>
           )}
         </button>
@@ -110,36 +116,48 @@ const ServiceStatusGroupMonitor: React.FC<Props> = ({ shops, onUpdateShop, onClo
         {activeTab === TabType.SERVICE_DISABLED ? (
           disabledServices.length > 0 ? (
             <div className="space-y-3">
-              {disabledServices.map(shop => (
-                <div key={shop.id} className="flex items-center justify-between p-4 bg-orange-50 rounded-xl border border-orange-100">
-                  <div className="flex items-center gap-3">
-                    <div className="bg-orange-500 p-2 rounded-lg text-white shadow-sm">
-                      <Power size={18} />
+              {disabledServices.map(shop => {
+                const isEnabled = shop.serviceEnabled;
+                const isLoading = loadingShopId === shop.id;
+
+                return (
+                  <div key={shop.id} className={`flex items-center justify-between p-4 rounded-xl border transition-all duration-300 ${
+                    isEnabled ? 'bg-green-50 border-green-100' : 'bg-orange-50 border-orange-100'
+                  }`}>
+                    <div className="flex items-center gap-3">
+                      <div className={`p-2 rounded-lg text-white shadow-sm transition-colors ${
+                        isEnabled ? 'bg-green-500' : 'bg-orange-500'
+                      }`}>
+                        {isEnabled ? <CheckCircle2 size={18} /> : <Power size={18} />}
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-gray-800 text-sm">{shop.name}</h4>
+                        {isEnabled && <span className="text-[10px] text-green-600 font-bold">服务已成功开启</span>}
+                      </div>
                     </div>
-                    <div>
-                      <h4 className="font-bold text-gray-800 text-sm">{shop.name}</h4>
-                    </div>
-                  </div>
-                  <div className="flex flex-col items-end">
-                    <button 
-                      role="switch"
-                      aria-checked="false"
-                      disabled={loadingShopId === shop.id}
-                      onClick={() => handleEnableService(shop)}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 ${
-                        loadingShopId === shop.id ? 'bg-orange-400' : 'bg-gray-300 hover:bg-gray-400'
-                      }`}
-                    >
-                       <span
-                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform shadow ${
-                          loadingShopId === shop.id ? 'translate-x-6' : 'translate-x-1'
+                    <div className="flex flex-col items-end">
+                      <button 
+                        role="switch"
+                        aria-checked={isEnabled}
+                        disabled={isLoading || isEnabled}
+                        onClick={() => handleEnableService(shop)}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 ${
+                          isEnabled ? 'bg-green-500' : (isLoading ? 'bg-orange-400' : 'bg-gray-300 hover:bg-gray-400')
                         }`}
-                      />
-                    </button>
-                    <span className="text-[10px] text-gray-400 mt-1.5 font-medium">开启后客户端重新托管即可生效</span>
+                      >
+                         <span
+                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform shadow ${
+                            isEnabled || isLoading ? 'translate-x-6' : 'translate-x-1'
+                          }`}
+                        />
+                      </button>
+                      <span className="text-[10px] text-gray-400 mt-1.5 font-medium">
+                        {isEnabled ? '客户端重新托管即可生效' : '开启后客户端重新托管即可生效'}
+                      </span>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center py-12 text-gray-400">
@@ -192,34 +210,23 @@ const ServiceStatusGroupMonitor: React.FC<Props> = ({ shops, onUpdateShop, onClo
               </div>
             </div>
 
-            {/* Step 2: Global Account Check (Consolidated) */}
+            {/* Step 2: Global Account Check */}
             <div className="bg-red-50/40 border border-red-100 rounded-2xl p-4">
               <div className="flex items-center gap-2 mb-3">
                 <span className="shrink-0 w-6 h-6 bg-red-100 text-red-600 text-xs flex items-center justify-center rounded-full font-bold shadow-sm border border-red-200">2</span>
-                <h5 className="font-bold text-sm text-gray-800">检查账号与订购</h5>
+                <h5 className="font-bold text-sm text-gray-800">检查订购与有效期</h5>
               </div>
-              <div className="grid grid-cols-2 gap-6">
-                <div className="flex flex-col gap-1.5">
-                  <div className="flex items-center gap-1.5 text-gray-700 font-bold text-xs">
-                    <UserCheck size={14} className="text-blue-500" />
-                    账号一致性
-                  </div>
+              <div className="flex flex-col gap-1.5">
+                <div className="flex items-center gap-1.5 text-gray-700 font-bold text-xs">
+                  <CreditCard size={14} className="text-orange-500" />
+                  服务有效期
+                </div>
                   <p className="text-[11px] text-gray-500 leading-relaxed">
-                    千牛登录账号必须与下方列表中的店铺名称一致，否则无法建立连接。
-                  </p>
-                </div>
-                <div className="flex flex-col gap-1.5 border-l border-red-100 pl-4">
-                  <div className="flex items-center gap-1.5 text-gray-700 font-bold text-xs">
-                    <CreditCard size={14} className="text-orange-500" />
-                    服务有效期
-                  </div>
-                   <p className="text-[11px] text-gray-500 leading-relaxed">
-                    服务过期会导致断连，
-                    <button className="text-blue-600 hover:underline inline-flex items-center gap-0.5">
-                      去服务市场查看 <ExternalLink size={10} />
-                    </button>
-                  </p>
-                </div>
+                  服务过期会导致断连，请确保当前店铺对应的服务合约仍在有效期内。
+                  <button className="text-blue-600 hover:underline inline-flex items-center gap-0.5 ml-1">
+                    去服务市场查看 <ExternalLink size={10} />
+                  </button>
+                </p>
               </div>
             </div>
 
