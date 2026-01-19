@@ -19,7 +19,7 @@ const App: React.FC = () => {
             演示实例 A：验证成功路径
           </div>
           <QianniuPluginPrototype behavior="always-success" />
-          <p className="text-[11px] text-gray-400 max-w-[320px] text-center italic">
+          <p className="text-[11px] text-gray-400 max-w-[320px] text-center italic leading-relaxed">
             点击“验证连接”后模拟连接正常，<br/>直接切换至高保真智能体工作区视图。
           </p>
         </div>
@@ -30,7 +30,7 @@ const App: React.FC = () => {
             演示实例 B：验证失败路径
           </div>
           <QianniuPluginPrototype behavior="always-fail" />
-          <p className="text-[11px] text-gray-400 max-w-[320px] text-center italic">
+          <p className="text-[11px] text-gray-400 max-w-[320px] text-center italic leading-relaxed">
             点击“验证连接”后模拟检测仍有异常，<br/>按钮切换至红色失败状态并引导重试。
           </p>
         </div>
@@ -39,7 +39,7 @@ const App: React.FC = () => {
       
       {/* 背景装饰性文字 */}
       <div className="fixed bottom-4 left-4 text-gray-400 text-[10px] uppercase tracking-widest pointer-events-none opacity-30">
-        Qianniu Plugin Prototype v2.6 · Dual Mode Demo
+        Panel Connection Prototype v2.7 · Dual Mode Demo
       </div>
     </div>
   );
