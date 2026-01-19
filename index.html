@@ -1,11 +1,15 @@
-
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>集团版智能客服监控系统</title>
+    
+    <!-- 1. 样式与框架基础 -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 2. 引入 Babel 以在浏览器中直接运行 TSX 文件，解决 GitHub Pages 的 MIME 类型限制 -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
     <script>
         tailwind.config = {
             theme: {
@@ -17,22 +21,21 @@
                             dark: '#1d2129',
                             gray: '#f2f3f5'
                         }
+                    },
+                    animation: {
+                        'ping-slow': 'radar-ping 2s cubic-bezier(0, 0, 0.2, 1) infinite',
                     }
                 }
             }
         }
     </script>
+    
     <style>
-        /* 核心动画：雷达脉冲 */
+        /* 核心动画定义 */
         @keyframes radar-ping {
             0% { transform: scale(1); opacity: 0.8; }
             100% { transform: scale(3); opacity: 0; }
         }
-        .animate-radar {
-            animation: radar-ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
-        }
-
-        /* 动画 1: 模拟光标操作 */
         @keyframes cursor-move {
             0%, 10% { transform: translate(40px, 40px); }
             40%, 60% { transform: translate(12px, 12px); }
@@ -46,8 +49,6 @@
             0%, 50% { width: 0; opacity: 0; }
             60%, 100% { width: 80px; opacity: 1; }
         }
-
-        /* 动画 2: 列表滚动查找 */
         @keyframes list-scroll {
             0%, 20% { transform: translateY(0); }
             80%, 100% { transform: translateY(-60px); }
@@ -57,26 +58,33 @@
             85%, 100% { border-color: #3b82f6; background: #eff6ff; }
         }
         
-        /* 隐藏滚动条 */
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
+
+    <!-- 3. 彻底修复 Import Map：移除所有 React 19 引用 -->
     <script type="importmap">
 {
   "imports": {
     "react": "https://esm.sh/react@18.3.1",
-    "react/": "https://esm.sh/react@18.3.1/",
     "react-dom": "https://esm.sh/react-dom@18.3.1?deps=react@18.3.1",
     "react-dom/client": "https://esm.sh/react-dom@18.3.1/client?deps=react@18.3.1",
     "react/jsx-runtime": "https://esm.sh/react@18.3.1/jsx-runtime",
     "lucide-react": "https://esm.sh/lucide-react@0.460.0?deps=react@18.3.1",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.3/"
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "react/": "https://esm.sh/react@^19.2.3/"
   }
 }
 </script>
 </head>
 <body class="bg-enterprise-gray text-enterprise-dark antialiased">
     <div id="root"></div>
-    <script type="module" src="./index.tsx"></script>
+    <!-- 4. 使用 Babel 加载脚本：data-presets 必须包含 typescript 和 react -->
+    <script 
+        type="text/babel" 
+        data-type="module" 
+        data-presets="react,typescript" 
+        src="./index.tsx"
+    ></script>
 </body>
 </html>
