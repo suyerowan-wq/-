@@ -5,8 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>集团版智能客服监控系统</title>
     
-    <!-- 样式基础 -->
+    <!-- 1. 样式与框架基础 -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 2. 引入 Babel 以在浏览器中直接运行 TSX 文件，解决 GitHub Pages 的 MIME 类型限制 -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     
     <script>
@@ -30,6 +31,7 @@
     </script>
     
     <style>
+        /* 核心动画定义 */
         @keyframes radar-ping {
             0% { transform: scale(1); opacity: 0.8; }
             100% { transform: scale(3); opacity: 0; }
@@ -55,11 +57,12 @@
             0%, 75% { border-color: transparent; background: transparent; }
             85%, 100% { border-color: #3b82f6; background: #eff6ff; }
         }
+        
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 
-    <!-- 彻底移除 React 19：删除之前的 "react/" 和 "react-dom/" 错误路径 -->
+    <!-- 3. 彻底修复 Import Map：移除所有 React 19 引用 -->
     <script type="importmap">
 {
   "imports": {
@@ -76,22 +79,12 @@
 </head>
 <body class="bg-enterprise-gray text-enterprise-dark antialiased">
     <div id="root"></div>
-
-    <!-- 将 index.tsx 的逻辑内联到此处，防止浏览器发起对 .tsx 文件的直接加载 -->
-    <script type="text/babel" data-type="module" data-presets="react,typescript">
-        import React from 'react';
-        import { createRoot } from 'react-dom/client';
-        import App from './App.tsx'; // 明确指定后缀
-
-        const rootElement = document.getElementById('root');
-        if (rootElement) {
-            const root = createRoot(rootElement);
-            root.render(
-                <React.StrictMode>
-                    <App />
-                </React.StrictMode>
-            );
-        }
-    </script>
+    <!-- 4. 使用 Babel 加载脚本：data-presets 必须包含 typescript 和 react -->
+    <script 
+        type="text/babel" 
+        data-type="module" 
+        data-presets="react,typescript" 
+        src="./index.tsx"
+    ></script>
 </body>
 </html>
